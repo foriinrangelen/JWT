@@ -1,14 +1,17 @@
+const cookieParser = require('cookie-parser');
 const express= require('express');
 const jwt= require('jsonwebtoken');
 
 const app= express();
 // 원래는 dotenv 모듈 활용 하여 process.env.ACESS_TOKEN_SECRET 으로 접근
 const secretText= 'superSecret';
-// ✅ refreshtoken용 serectkey 생성
+// refreshtoken용 serectkey 생성
 const refreshSecretText= 'supersuperSecret';
-// ✅ refreshtoken DB대용 배열 생성
+// refreshtoken DB대용 배열 생성
 let refreshTokens= [];
 app.use(express.json());
+// ✅ cookieparsing을 위한 미들웨어 등록
+app.use(cookieParser());
 
   ///////////////////////////////////////////////////////////////////////////////////
  //////////              AccessToken + RefreshToekn의 Flow                //////////       
@@ -74,21 +77,48 @@ app.post('/login', (req, res)=> {
 
     // jwt를 이용해서 토큰 생성하기 ( payload + secretText )
     // jwt.sign() : 첫번째 매개변수에 payload, 두번째 매개변수에 secretKey를 조합하여 jwt토큰 return하는 Method
-    // ✅ 유효기간 추가하기( 세번째 매개변수에 { expiresIn:'시간' } 으로 설정  )
+    // 유효기간 추가하기( 세번째 매개변수에 { expiresIn:'시간' } 으로 설정  )
     const accessToken= jwt.sign(user, secretText, { expiresIn:'30s' });
     
-    // ✅ jwt를 이용해서 refreshToken도 생성하기 (원론적으론 DB에 저장, 실습에선 배열로 테스트)
+    // jwt를 이용해서 refreshToken도 생성하기 (원론적으론 DB에 저장, 실습에선 배열로 테스트)
     const refreshToken= jwt.sign(user, refreshSecretText, { expiresIn:'1d' });
 
-    // ✅ 임시 배열(DB대용)에 push
+    // 임시 배열(DB대용)에 push
     refreshTokens.push(refreshToken);
 
-    // ✅ refreshToken을 쿠키에 넣어주기 ( 'jwt' 이름으로 refreshToken 저장 )
+    // refreshToken을 쿠키에 넣어주기 ( 'jwt' 이름으로 refreshToken 저장 )
     res.cookie('jwt', refreshToken, { httpOnly: true, maxAge:24* 60* 60* 1000 });
 
     // 원래는 Header에 추가
     res.json({accessToken: accessToken});
 
+})
+
+// ✅ access토큰 만료 후 refresh토큰으로 재발급 받기
+app.get('/refresh', (req, res)=> {
+    console.log('req.cookies', req.cookies)
+    // ✅ 쿠키 가져오기
+    const cookies= req.cookies;
+    // ✅ 쿠키안에 jwt가 없다면 403 return
+    if(!cookies?.jwt) return res.sendStatus(403);
+    // ✅ refreshtoken 가져온후 DB에 있는 토큰확인 (여기선 배열로 확인)
+    const refreshToken= cookies.jwt;
+    if(!refreshTokens.includes(refreshToken)) {
+        return res.sendStatus(403);
+    }
+    // ✅ refresh토큰이 유효한 토큰인지 확인
+    jwt.verify(refreshToken, refreshSecretText, (err, user)=> {
+        // 유효한 토큰이 아니라면
+        if(err) return res.sendStatus(403);
+        // 유효한 토큰이라면 access토큰 재발급하기
+        const accessToken= jwt.sign( {name: user.name}, secretText, { expiresIn:'30s' }) ;
+        // 재발급 후 클라이언트에게 전달
+        res.json( {accessToken} )
+    })
+
+
+
+    
 })
 
 
