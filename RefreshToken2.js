@@ -97,22 +97,22 @@ app.post('/login', (req, res)=> {
 // ✅ access토큰 만료 후 refresh토큰으로 재발급 받기
 app.get('/refresh', (req, res)=> {
     console.log('req.cookies', req.cookies)
-    // ✅ 쿠키 가져오기
+    //✅ 쿠키 가져오기
     const cookies= req.cookies;
-    // ✅ 쿠키안에 jwt가 없다면 403 return
+    //✅ 쿠키안에 jwt가 없다면 403 return
     if(!cookies?.jwt) return res.sendStatus(403);
-    // ✅ refreshtoken 가져온후 DB에 있는 토큰확인 (여기선 배열로 확인)
+    //✅ refreshtoken 가져온후 DB에 있는 토큰확인 (여기선 배열로 확인)
     const refreshToken= cookies.jwt;
     if(!refreshTokens.includes(refreshToken)) {
         return res.sendStatus(403);
     }
     // ✅ refresh토큰이 유효한 토큰인지 확인
     jwt.verify(refreshToken, refreshSecretText, (err, user)=> {
-        // 유효한 토큰이 아니라면
+        //✅ 유효한 토큰이 아니라면
         if(err) return res.sendStatus(403);
-        // 유효한 토큰이라면 access토큰 재발급하기
+        //✅ 유효한 토큰이라면 access토큰 재발급하기
         const accessToken= jwt.sign( {name: user.name}, secretText, { expiresIn:'30s' }) ;
-        // 재발급 후 클라이언트에게 전달
+        //✅ 재발급 후 클라이언트에게 전달
         res.json( {accessToken} )
     })
 
