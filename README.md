@@ -2,7 +2,7 @@
 
 #### 1. 프로젝트 폴더 생성
 #### 2. `npm init`
-#### 3. `npm install dotenv express jsonwebtoken nodemon`
+#### 3. `npm install dotenv express jsonwebtoken nodemon cookie-parser`
 ##
 ### cretejwt.js
 - jwt 생성
