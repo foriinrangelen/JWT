@@ -30,7 +30,7 @@ app.get('/post',authMiddleware, (req, res)=> {
 })
 
 function authMiddleware(req, res, next) {
-    // 토큰은 request headers에서 가져오기
+    // 토큰은 request headers에서 가져오기 (request headers의 authorization에 토큰이 저장된다)
     const authHeader= req.headers['authorization'];
     // Bearer [토큰] 구조에서 토큰만 가져오기(Bearer 잘라내기)
     const token= authHeader && authHeader.split(' ')[1];
